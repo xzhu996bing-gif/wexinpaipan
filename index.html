@@ -297,6 +297,19 @@
         }
         .form-row .form-group { flex: 1; }
 
+        .settings-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .settings-note {
+            font-size: 12px;
+            color: var(--text-soft);
+            line-height: 1.5;
+        }
+
         /* Loading overlay */
         .overlay {
             display: none;
@@ -415,6 +428,27 @@
                     </div>
                 </div>
 
+                <!-- API 设置面板 -->
+                <div class="settings-panel is-open" id="settingsPanel">
+                    <h3>API 配置</h3>
+                    <div class="form-group">
+                        <label for="apiBaseUrl">API 地址</label>
+                        <input type="text" id="apiBaseUrl" placeholder="https://api.deepseek.com/v1 或 https://api.openai.com/v1/chat/completions">
+                    </div>
+                    <div class="form-group">
+                        <label for="apiToken">API Key</label>
+                        <input type="password" id="apiToken" placeholder="sk-... / tp-..." autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="apiModel">模型</label>
+                        <input type="text" id="apiModel" placeholder="deepseek-chat / gpt-4o-mini / mimo-v2.5">
+                    </div>
+                    <div class="settings-actions">
+                        <button class="btn btn--primary" id="saveSettingsBtn">保存配置</button>
+                        <span class="settings-note">只保存在当前浏览器本地，不会上传或共享。</span>
+                    </div>
+                </div>
+
                 <!-- 生成按钮 -->
                 <div class="generate-section">
                     <button class="btn btn--primary btn--large" id="generateBtn">
@@ -438,33 +472,6 @@
                     </div>
                 </div>
             </section>
-        </div>
-
-        <!-- API 设置面板 -->
-        <div class="settings-panel" id="settingsPanel">
-            <h3>API 配置</h3>
-            <div class="form-group">
-                <label>接口地址</label>
-                <input type="text" id="apiBaseUrl" placeholder="https://token-plan-cn.xiaomimimo.com/anthropic">
-            </div>
-            <div class="form-group">
-                <label>API Token</label>
-                <input type="password" id="apiToken" placeholder="tp-c7v9q4pn3fg4...">
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>模型</label>
-                    <input type="text" id="apiModel" placeholder="mimo-v2.5">
-                </div>
-                <div class="form-group">
-                    <label>最大输出长度</label>
-                    <select id="apiMaxTokens">
-                        <option value="4096">4096</option>
-                        <option value="8192" selected>8192</option>
-                        <option value="16384">16384</option>
-                    </select>
-                </div>
-            </div>
         </div>
 
         <!-- 快捷链接 -->
@@ -496,7 +503,7 @@
         const apiBaseUrl = $('#apiBaseUrl');
         const apiToken = $('#apiToken');
         const apiModel = $('#apiModel');
-        const apiMaxTokens = $('#apiMaxTokens');
+        const saveSettingsBtn = $('#saveSettingsBtn');
         const loadingOverlay = $('#loadingOverlay');
         const toast = $('#toast');
         const resultPreview = $('#resultPreview');
@@ -506,11 +513,11 @@
 
         // ── Defaults ──
         const DEFAULTS = {
-            baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
+            baseUrl: '',
             token: '',
-            model: 'mimo-v2.5',
-            maxTokens: '8192'
+            model: 'mimo-v2.5'
         };
+        const ANTHROPIC_MAX_TOKENS = 16384;
 
         // ── Settings persistence ──
         function loadSettings() {
@@ -519,12 +526,10 @@
                 apiBaseUrl.value = saved.baseUrl || DEFAULTS.baseUrl;
                 apiToken.value = saved.token || DEFAULTS.token;
                 apiModel.value = saved.model === 'mino-2.5' ? DEFAULTS.model : (saved.model || DEFAULTS.model);
-                apiMaxTokens.value = saved.maxTokens || DEFAULTS.maxTokens;
             } catch (e) {
                 apiBaseUrl.value = DEFAULTS.baseUrl;
                 apiToken.value = DEFAULTS.token;
                 apiModel.value = DEFAULTS.model;
-                apiMaxTokens.value = DEFAULTS.maxTokens;
             }
         }
 
@@ -532,9 +537,13 @@
             localStorage.setItem('wechat-editor-settings', JSON.stringify({
                 baseUrl: apiBaseUrl.value.trim(),
                 token: apiToken.value.trim(),
-                model: apiModel.value.trim(),
-                maxTokens: apiMaxTokens.value
+                model: apiModel.value.trim()
             }));
+        }
+
+        function saveSettingsWithFeedback() {
+            saveSettings();
+            showToast('API 配置已保存');
         }
 
         // ── Toast ──
@@ -658,13 +667,21 @@
                 return;
             }
 
-            const baseUrl = apiBaseUrl.value.trim() || DEFAULTS.baseUrl;
-            const token = apiToken.value.trim() || DEFAULTS.token;
+            const baseUrl = apiBaseUrl.value.trim();
+            const token = apiToken.value.trim();
             const model = apiModel.value.trim() || DEFAULTS.model;
-            const maxTokens = parseInt(apiMaxTokens.value) || 8192;
+
+            if (!baseUrl) {
+                showToast('请填写 API 地址');
+                settingsPanel.classList.add('is-open');
+                apiBaseUrl.focus();
+                return;
+            }
 
             if (!token) {
-                showToast('请填写 API Token');
+                showToast('请填写 API Key');
+                settingsPanel.classList.add('is-open');
+                apiToken.focus();
                 return;
             }
 
@@ -673,63 +690,133 @@
 
             try {
                 const systemPrompt = await buildSystemPrompt();
+                const attempts = prefersAnthropicFormat(baseUrl)
+                    ? [
+                        { label: 'Anthropic 格式', run: () => callAnthropic(text, token, model, baseUrl, systemPrompt) },
+                        { label: 'OpenAI 格式', run: () => callOpenAI(text, token, model, baseUrl, systemPrompt) }
+                    ]
+                    : [
+                        { label: 'OpenAI 格式', run: () => callOpenAI(text, token, model, baseUrl, systemPrompt) },
+                        { label: 'Anthropic 格式', run: () => callAnthropic(text, token, model, baseUrl, systemPrompt) }
+                    ];
+                let resultHtml = '';
+                let lastError = null;
 
-                // Try Anthropic-compatible endpoint first
-                const endpoint = baseUrl.endsWith('/v1/messages')
-                    ? baseUrl
-                    : baseUrl.replace(/\/$/, '') + '/v1/messages';
+                for (const attempt of attempts) {
+                    try {
+                        resultHtml = await attempt.run();
+                        break;
+                    } catch (err) {
+                        lastError = err;
+                        console.warn(`${attempt.label} failed:`, err);
 
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': token,
-                        'anthropic-version': '2023-06-01'
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        max_tokens: maxTokens,
-                        temperature: 0.1,
-                        system: systemPrompt,
-                        messages: [
-                            { role: 'user', content: text }
-                        ]
-                    })
-                });
-
-                if (!response.ok) {
-                    const errBody = await response.text().catch(() => '');
-                    // If 404/405, fall through to OpenAI format
-                    if (response.status === 404 || response.status === 405) {
-                        throw { type: 'FALLBACK', status: response.status, body: errBody };
+                        if (!shouldTryFallback(err)) {
+                            throw err;
+                        }
                     }
-                    throw new Error(`API 错误 ${response.status}: ${errBody.slice(0, 150)}`);
                 }
 
-                const data = await response.json();
-                let resultHtml = extractContent(data);
-                resultHtml = cleanResult(resultHtml);
-                setLoading(false);
+                if (!resultHtml) {
+                    throw lastError || new Error('API 返回了空内容');
+                }
+
                 renderResult(resultHtml);
-                return;
 
             } catch (err) {
-                if (err && err.type === 'FALLBACK') {
-                    // Try OpenAI format silently
-                    try {
-                        await callOpenAI(text, token, model, maxTokens, baseUrl, await buildSystemPrompt());
-                        return;
-                    } catch (err2) {
-                        console.error('Both formats failed:', err2);
-                        showToast('生成失败: 两种 API 格式都失败了，请检查接口地址和 Token');
-                        setLoading(false);
-                        return;
-                    }
-                }
                 console.error('Generate error:', err);
-                showToast('生成失败: ' + (err.message || '未知错误'));
+                showToast('生成失败: ' + getReadableApiError(err));
+            } finally {
                 setLoading(false);
             }
+        }
+
+        function stripTrailingSlash(value) {
+            return (value || '').trim().replace(/\/+$/, '');
+        }
+
+        function buildOpenAIEndpoint(baseUrl) {
+            const clean = stripTrailingSlash(baseUrl).replace(/\/anthropic$/i, '');
+            if (/\/chat\/completions$/i.test(clean)) {
+                return clean;
+            }
+            if (/\/v1$/i.test(clean)) {
+                return `${clean}/chat/completions`;
+            }
+            return `${clean}/v1/chat/completions`;
+        }
+
+        function buildAnthropicEndpoint(baseUrl) {
+            const clean = stripTrailingSlash(baseUrl);
+            if (/\/v1\/messages$/i.test(clean)) {
+                return clean;
+            }
+            if (/\/v1$/i.test(clean)) {
+                return `${clean}/messages`;
+            }
+            return `${clean}/v1/messages`;
+        }
+
+        function prefersAnthropicFormat(baseUrl) {
+            return /anthropic/i.test(baseUrl) || /\/v1\/messages\/?$/i.test(baseUrl);
+        }
+
+        function shouldTryFallback(error) {
+            return error && error.type === 'API_HTTP_ERROR' && [400, 404, 405].includes(error.status);
+        }
+
+        function getReadableApiError(error) {
+            if (!error) {
+                return '未知错误';
+            }
+            if (error.type === 'API_HTTP_ERROR') {
+                const body = error.body ? `: ${error.body.slice(0, 120)}` : '';
+                return `${error.label} ${error.status}${body}`;
+            }
+            return error.message || '未知错误';
+        }
+
+        async function postJson(endpoint, headers, body, label) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const errBody = await response.text().catch(() => '');
+                const error = new Error(`${label} ${response.status}`);
+                error.type = 'API_HTTP_ERROR';
+                error.label = label;
+                error.status = response.status;
+                error.body = errBody;
+                throw error;
+            }
+
+            return response.json();
+        }
+
+        async function callAnthropic(text, token, model, baseUrl, systemPrompt) {
+            const endpoint = buildAnthropicEndpoint(baseUrl);
+            const data = await postJson(
+                endpoint,
+                {
+                    'Content-Type': 'application/json',
+                    'x-api-key': token,
+                    'anthropic-version': '2023-06-01'
+                },
+                {
+                    model: model,
+                    max_tokens: ANTHROPIC_MAX_TOKENS,
+                    temperature: 0.1,
+                    system: systemPrompt,
+                    messages: [
+                        { role: 'user', content: text }
+                    ]
+                },
+                'Anthropic 格式'
+            );
+
+            return cleanResult(extractContent(data));
         }
 
         function extractContent(data) {
@@ -767,36 +854,26 @@
             return html;
         }
 
-        async function callOpenAI(text, token, model, maxTokens, baseUrl, systemPrompt) {
-            const endpoint = baseUrl.replace(/\/anthropic\/?$/, '/v1').replace(/\/$/, '') + '/chat/completions';
-
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
+        async function callOpenAI(text, token, model, baseUrl, systemPrompt) {
+            const endpoint = buildOpenAIEndpoint(baseUrl);
+            const data = await postJson(
+                endpoint,
+                {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + token
                 },
-                body: JSON.stringify({
+                {
                     model: model,
-                    max_tokens: maxTokens,
                     temperature: 0.1,
                     messages: [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: text }
                     ]
-                })
-            });
+                },
+                'OpenAI 格式'
+            );
 
-            if (!response.ok) {
-                const errBody = await response.text().catch(() => '');
-                throw new Error(`OpenAI 格式 ${response.status}: ${errBody.slice(0, 150)}`);
-            }
-
-            const data = await response.json();
-            let resultHtml = extractContent(data);
-            resultHtml = cleanResult(resultHtml);
-            setLoading(false);
-            renderResult(resultHtml);
+            return cleanResult(extractContent(data));
         }
 
         function renderResult(html) {
@@ -912,6 +989,8 @@
         });
 
         copyHtmlBtn.addEventListener('click', copyHtml);
+
+        saveSettingsBtn.addEventListener('click', saveSettingsWithFeedback);
 
         settingsToggle.addEventListener('click', () => {
             settingsPanel.classList.toggle('is-open');
