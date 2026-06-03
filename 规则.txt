@@ -1,0 +1,100 @@
+学习下面这个规则，以后我给素材给你，你就直接按这个规则生成markdown格式，
+
+目标：
+把原文整理成适合微信公众号的 Markdown 格式，整体阅读感自然、协调、适合手机阅读。
+默认输出“Markdown + 稳定 HTML”的混合格式，不要解释，只直接输出成品。
+
+整体规则：
+1. 保持原文意思、语气、顺序不乱改。
+2. 一行尽量铺满，不要太早断句。
+3. 正文按 2-3 行一组自然分段。
+4. 不要把页面做得太花，强调和模块都要克制、协调。
+5. 红框承接的是“一整段本质段/落点段”，不是一句话。
+6. 开头几句搞一二个关键词笔刷，优先笔刷承接的是关键词，比如“短词、短短语、动作词、提问词、界限词”，不是整句。
+
+7. 黑色加粗只加关键词或短短语，不加整句。加粗用strong标签，开头用几个笔刷样式，语义分析蓝色和棕色字体，棕色少量
+8. 如果没有特别必要，不要乱加模块。
+9.检查文章要有加粗字体和下划线
+样式映射规则：
+
+一、副标题
+如果我写：
+## 标题内容
+
+你要理解为“小副标题”，输出成下面这个 HTML，不要保留 ## 原样：
+
+<h2 style="font-size:22px;font-weight:700;margin:32px 0 14px;padding-left:12px;border-left:4px solid #007aaa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;text-align:left;color:#333333;line-height:1.35;">标题内容</h2>
+
+二、蓝色重点词
+如果一句话里需要标核心概念、关键结论、重要名词，用这个：
+<span style="color:#007aaa;font-weight:700;">文字</span>
+
+三、棕红色重点词
+如果一句话里需要标痛点词、焦虑词、问题词，用这个：
+<span style="color:#8B3A2E;font-weight:700;">文字</span>
+
+四、笔刷高亮
+如果一句话里有特别值得托出来的短短语，用这个笔刷样式：
+<span style="background:linear-gradient(transparent 72%, #74e7e8 0);font-weight:700;">文字</span>
+
+笔刷适合：
+- 动作词
+- 提问词
+- 短短语
+- 界限词
+- 一句话里最该被看到的那个点
+
+不要用笔刷刷整句。
+
+五、下划线
+如果一句话里需要轻提醒、动作提醒、结果提醒，用这个：
+<span style="text-decoration: underline;">文字</span>
+
+六、蓝色引用模块
+如果内容是一整段温和总结、观察、提醒、感受，用这个：
+
+<blockquote style="margin:24px 0;padding:16px 20px;border-left:4px solid #007aaa;border-radius:4px;background-color:#f3fafc;color:#555555;line-height:1.8;">
+这里放一整段文字
+</blockquote>
+
+七、红色边框模块
+如果内容是一整段“本质段 / 落点段 / 结论段 / 说破的那一段”，用这个轻红框：
+
+<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+  <tr>
+    <td style="border:1.5px solid #ff6b6b;padding:16px 18px;line-height:1.9;font-size:16px;color:#000000;background:#fffefe;vertical-align:top;">
+      这里放一整段文字
+    </td>
+  </tr>
+</table>
+
+红框适合：
+- 一整段本质判断
+- 一整段落点
+- 一整段说破
+- 一整段值得停一下的内容
+
+不要把普通句子也乱放红框。
+
+八、子弹头模块
+如果内容本身是并列点、拆逻辑、拆层次，用这个：
+
+<ul style="margin:16px 0;padding-left:28px;list-style-position:outside;list-style-type:disc !important;">
+  <li style="margin:8px 0;font-size:16px;line-height:1.8 !important;color:#000000 !important;">第一点</li>
+  <li style="margin:8px 0;font-size:16px;line-height:1.8 !important;color:#000000 !important;">第二点</li>
+  <li style="margin:8px 0;font-size:16px;line-height:1.8 !important;color:#000000 !important;">第三点</li>
+</ul>
+
+九、三步法/多步法
+如果文中出现“第一步、第二步、第三步”，优先用这种三行结构：
+
+第一步，<span style="color:#007aaa;font-weight:700;">分清你我他</span>。<br>
+第二步，<span style="color:#007aaa;font-weight:700;">情绪独立</span>。<br>
+第三步，<span style="color:#007aaa;font-weight:700;">情感表达</span>。
+
+十、输出要求
+1. 最终直接输出成品。
+2. 不要解释你用了什么规则。
+3. 不要输出“下面是排版结果”这种废话。
+4. 保持整体自然、协调，不要过度设计。
+5. 如果某个地方适合红框，就用一整段；如果某个地方适合笔刷，就只刷短词。

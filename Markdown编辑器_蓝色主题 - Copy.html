@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线微信编辑器</title>
+    <link rel="stylesheet" href="styles/editor.css">
+</head>
+<body class="editor-shell" data-rules-page="rules.html" data-demo-page="demo.html">
+    <header class="toolbar">
+        <div class="toolbar__brand">
+            <h1>在线微信编辑器</h1>
+            <p>本地离线公众号排版工作台</p>
+        </div>
+        <div class="toolbar__actions">
+            <button type="button" id="openRulesBtn">规则</button>
+            <button type="button" id="openDemoBtn">效果展示</button>
+            <button type="button" id="openFileBtn">打开文件</button>
+            <button type="button" id="saveMarkdownBtn" class="button--accent">保存 Markdown</button>
+            <button type="button" id="copyHtmlBtn" class="button--accent">复制 HTML</button>
+            <button type="button" id="previewBtn" class="button--accent">预览</button>
+            <button type="button" id="clearEditorBtn" class="button--ghost">清空</button>
+        </div>
+    </header>
+
+    <main class="workspace workspace--editor-only">
+        <section class="editor-panel">
+            <div class="panel-card editor-card">
+                <div class="panel-card__header">
+                    <h2>Markdown 编辑区</h2>
+                </div>
+                <textarea id="editor" spellcheck="false" placeholder="把原始素材贴在这里，直接整理成适合公众号的 Markdown + HTML 混排内容。"></textarea>
+            </div>
+        </section>
+    </main>
+
+    <div id="previewModal" class="preview-modal" aria-hidden="true">
+        <div class="preview-modal__backdrop" data-close-preview="true"></div>
+        <div class="preview-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+            <div class="preview-modal__header">
+                <h2 id="previewTitle">预览效果</h2>
+                <div class="preview-modal__header-actions">
+                    <button type="button" id="previewCopyBtn" class="button--accent button--small">复制 HTML</button>
+                    <button type="button" id="closePreviewBtn" class="preview-modal__close" aria-label="关闭预览">×</button>
+                </div>
+            </div>
+            <div id="preview" class="preview-modal__body preview-content"></div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="scripts/marked.min.js"></script>
+    <script src="scripts/page-links.js"></script>
+    <script src="scripts/editor.js"></script>
+</body>
+</html>

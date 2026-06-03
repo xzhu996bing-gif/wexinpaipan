@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公众号排版 · 一键生成</title>
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --text: #1a1a2e;
+            --text-soft: #5c6b7a;
+            --brand: #007aaa;
+            --brand-soft: #e6f4fa;
+            --line: #dde4ec;
+            --radius: 14px;
+            --shadow: 0 2px 16px rgba(0,0,0,0.06);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header__title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 0.02em;
+        }
+
+        .header__subtitle {
+            font-size: 12px;
+            color: var(--text-soft);
+            margin-top: 2px;
+        }
+
+        .header__actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .btn:hover { background: #f7f9fb; border-color: #c4cdd6; }
+        .btn--primary {
+            background: var(--brand);
+            border-color: var(--brand);
+            color: #fff;
+        }
+        .btn--primary:hover { background: #00668f; border-color: #00668f; }
+        .btn--large {
+            padding: 14px 36px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+        .btn--ghost {
+            background: transparent;
+            border-color: transparent;
+            color: var(--text-soft);
+            font-size: 13px;
+            padding: 6px 10px;
+        }
+        .btn--ghost:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Main layout */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1320px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+            gap: 20px;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .workspace__pane {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Input card */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .card__header h2 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .card__body { padding: 20px; }
+
+        .card__body--preview {
+            min-height: 520px;
+            background: #f7fafc;
+        }
+
+        /* Textarea */
+        .input-area {
+            width: 100%;
+            min-height: 360px;
+            border: none;
+            outline: none;
+            resize: vertical;
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            padding: 0;
+        }
+        .input-area::placeholder {
+            color: #b0bec5;
+            line-height: 1.8;
+        }
+
+        /* Generate section */
+        .generate-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .generate-hint {
+            font-size: 13px;
+            color: var(--text-soft);
+            text-align: center;
+        }
+
+        .preview-shell {
+            min-height: 480px;
+            border: 1px dashed #d7e2eb;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 24px 20px;
+        }
+
+        .preview-placeholder {
+            min-height: 432px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--text-soft);
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .article-preview {
+            width: 100%;
+            color: #000;
+            word-break: break-word;
+        }
+
+        .article-preview > *:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        /* Settings panel */
+        .settings-toggle {
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-soft);
+            background: none;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .settings-toggle:hover { background: rgba(0,0,0,0.04); }
+
+        .settings-panel {
+            display: none;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+        .settings-panel.is-open { display: block; }
+
+        .settings-panel h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-soft);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+            color: var(--text);
+            background: #fafbfc;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px var(--brand-soft);
+        }
+
+        .form-group select {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-group { flex: 1; }
+
+        /* Loading overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(240,244,248,0.85);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .overlay.is-active { display: flex; }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--line);
+            border-top-color: var(--brand);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .overlay__text {
+            font-size: 14px;
+            color: var(--text-soft);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 13px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.25s;
+            pointer-events: none;
+        }
+        .toast.is-visible { opacity: 1; }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .main { padding: 16px 12px 32px; }
+            .workspace { grid-template-columns: 1fr; }
+            .input-area { min-height: 260px; }
+            .card__body--preview { min-height: 360px; }
+            .preview-shell {
+                min-height: 320px;
+                padding: 16px 12px;
+            }
+            .preview-placeholder { min-height: 288px; }
+            .header { padding: 12px 16px; }
+            .header__title { font-size: 16px; }
+            .form-row { flex-direction: column; gap: 0; }
+        }
+
+        /* Quick links */
+        .quick-links {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .quick-links a {
+            font-size: 13px;
+            color: var(--text-soft);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+        .quick-links a:hover {
+            background: rgba(0,0,0,0.04);
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div>
+            <div class="header__title">公众号排版 · 一键生成</div>
+            <div class="header__subtitle">粘贴原文 → AI 自动排版 → 直接发布</div>
+        </div>
+        <div class="header__actions">
+            <button class="settings-toggle" id="settingsToggle" title="API 设置">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                设置
+            </button>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="workspace">
+            <section class="workspace__pane">
+                <!-- 文本输入 -->
+                <div class="card">
+                    <div class="card__header">
+                        <h2>粘贴原文</h2>
+                        <button class="btn--ghost" id="clearBtn">清空</button>
+                    </div>
+                    <div class="card__body">
+                        <textarea
+                            class="input-area"
+                            id="inputText"
+                            placeholder="把要排版的原文粘贴在这里...&#10;&#10;可以是任何内容：育儿笔记、读书摘录、思考随笔、科普素材……&#10;AI 会自动识别语义，加上蓝字强调、笔刷高亮、红框结论、引用模块等排版。"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- 生成按钮 -->
+                <div class="generate-section">
+                    <button class="btn btn--primary btn--large" id="generateBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        一键生成排版
+                    </button>
+                    <p class="generate-hint">左边贴原文，右边直接看结果。生成后可一键复制 HTML</p>
+                </div>
+            </section>
+
+            <section class="workspace__pane">
+                <div class="card">
+                    <div class="card__header">
+                        <h2>排版结果</h2>
+                        <button class="btn" id="copyHtmlBtn" disabled>复制 HTML</button>
+                    </div>
+                    <div class="card__body card__body--preview">
+                        <div class="preview-shell" id="resultPreview">
+                            <div class="preview-placeholder">生成后的排版结果会显示在这里。<br>你可以边看左边原文，边对照右边效果。</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- API 设置面板 -->
+        <div class="settings-panel" id="settingsPanel">
+            <h3>API 配置</h3>
+            <div class="form-group">
+                <label>接口地址</label>
+                <input type="text" id="apiBaseUrl" placeholder="https://token-plan-cn.xiaomimimo.com/anthropic">
+            </div>
+            <div class="form-group">
+                <label>API Token</label>
+                <input type="password" id="apiToken" placeholder="tp-c7v9q4pn3fg4...">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>模型</label>
+                    <input type="text" id="apiModel" placeholder="mimo-v2.5">
+                </div>
+                <div class="form-group">
+                    <label>最大输出长度</label>
+                    <select id="apiMaxTokens">
+                        <option value="4096">4096</option>
+                        <option value="8192" selected>8192</option>
+                        <option value="16384">16384</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快捷链接 -->
+        <div class="quick-links">
+            <a href="Markdown编辑器_蓝色主题 - Copy.html">旧版编辑器</a>
+            <a href="rules.html">排版规则</a>
+            <a href="demo.html">效果展示</a>
+        </div>
+    </main>
+
+    <!-- 加载遮罩 -->
+    <div class="overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p class="overlay__text">AI 正在排版中…</p>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function() {
+        // ── DOM refs ──
+        const $ = (s) => document.querySelector(s);
+        const inputText = $('#inputText');
+        const generateBtn = $('#generateBtn');
+        const clearBtn = $('#clearBtn');
+        const settingsToggle = $('#settingsToggle');
+        const settingsPanel = $('#settingsPanel');
+        const apiBaseUrl = $('#apiBaseUrl');
+        const apiToken = $('#apiToken');
+        const apiModel = $('#apiModel');
+        const apiMaxTokens = $('#apiMaxTokens');
+        const loadingOverlay = $('#loadingOverlay');
+        const toast = $('#toast');
+        const resultPreview = $('#resultPreview');
+        const copyHtmlBtn = $('#copyHtmlBtn');
+        let latestResultHtml = '';
+        let layoutSkillPrompt = '';
+
+        // ── Defaults ──
+        const DEFAULTS = {
+            baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
+            token: '',
+            model: 'mimo-v2.5',
+            maxTokens: '8192'
+        };
+
+        // ── Settings persistence ──
+        function loadSettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('wechat-editor-settings') || '{}');
+                apiBaseUrl.value = saved.baseUrl || DEFAULTS.baseUrl;
+                apiToken.value = saved.token || DEFAULTS.token;
+                apiModel.value = saved.model === 'mino-2.5' ? DEFAULTS.model : (saved.model || DEFAULTS.model);
+                apiMaxTokens.value = saved.maxTokens || DEFAULTS.maxTokens;
+            } catch (e) {
+                apiBaseUrl.value = DEFAULTS.baseUrl;
+                apiToken.value = DEFAULTS.token;
+                apiModel.value = DEFAULTS.model;
+                apiMaxTokens.value = DEFAULTS.maxTokens;
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('wechat-editor-settings', JSON.stringify({
+                baseUrl: apiBaseUrl.value.trim(),
+                token: apiToken.value.trim(),
+                model: apiModel.value.trim(),
+                maxTokens: apiMaxTokens.value
+            }));
+        }
+
+        // ── Toast ──
+        let toastTimer;
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('is-visible');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2500);
+        }
+
+        // ── Loading ──
+        function setLoading(active) {
+            if (active) {
+                loadingOverlay.classList.add('is-active');
+                generateBtn.disabled = true;
+            } else {
+                loadingOverlay.classList.remove('is-active');
+                generateBtn.disabled = false;
+            }
+        }
+
+        // ── Website skill prompt ──
+        const FALLBACK_LAYOUT_SKILL = `你是一个专业的微信公众号排版助手。你的任务是把用户提供的原始文本，按照以下排版规则，输出为可直接发布到微信公众号的 HTML 代码。
+
+## 排版规则
+
+### 整体原则
+1. 保持原文意思、语气、顺序不乱改。
+2. 一行尽量铺满，不要太早断句。
+3. 正文按 2-3 行一组自然分段。
+4. 不要把页面做得太花，强调和模块都要克制、协调。
+5. 红框承接的是"一整段本质段/落点段"，不是一句话。
+6. 笔刷承接的是"短词、短短语、动作词、提问词、界限词"，不是整句。
+7. 黑色加粗只加关键词或短短语，不加整句。加粗用 strong 标签。
+8. 如果没有特别必要，不要乱加模块。
+
+### 样式映射
+
+**副标题** — 遇到章节标题用这个：
+<h2 style="font-size:22px;font-weight:700;margin:32px 0 14px;padding-left:12px;border-left:4px solid #007aaa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;text-align:left;color:#333333;line-height:1.35;">标题内容</h2>
+
+**蓝色重点词** — 核心概念、关键结论、重要名词：
+<span style="color:#007aaa;font-weight:700;">文字</span>
+
+**棕红色重点词** — 痛点词、焦虑词、问题词（少量使用）：
+<span style="color:#8B3A2E;font-weight:700;">文字</span>
+
+**笔刷高亮** — 短词、短短语、动作词、提问词、界限词，只刷短词不刷整句：
+<span style="background:linear-gradient(transparent 72%, #74e7e8 0);font-weight:700;">文字</span>
+
+**下划线** — 轻提醒、动作提醒：
+<span style="text-decoration: underline;">文字</span>
+
+**蓝色引用模块** — 一整段温和总结、观察、提醒、感受：
+<blockquote style="margin:24px 0;padding:16px 20px;border-left:4px solid #007aaa;border-radius:4px;background-color:#f3fafc;color:#555555;line-height:1.8;">
+一整段文字
+</blockquote>
+
+**红色边框模块** — 一整段本质判断、落点、结论、说破：
+<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+  <tr>
+    <td style="border:1.5px solid #ff6b6b;padding:16px 18px;line-height:1.9;font-size:16px;color:#000000;background:#fffefe;vertical-align:top;">
+      一整段文字
+    </td>
+  </tr>
+</table>
+
+**子弹头列表** — 并列点、拆逻辑：
+<ul style="margin:16px 0;padding-left:28px;list-style-position:outside;list-style-type:disc !important;">
+  <li style="margin:8px 0;font-size:16px;line-height:1.8 !important;color:#000000 !important;">第一点</li>
+</ul>
+
+**三步法** — 第一步、第二步、第三步，用这种结构：
+第一步，<span style="color:#007aaa;font-weight:700;">关键词</span>。<br>
+
+### 正文段落样式
+正文段落用这个样式：
+<p style="margin:0 0 22px;font-size:16px;line-height:1.85;color:#000000;word-break:break-word;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;">段落文字</p>
+
+### 输出要求
+1. 直接输出完整的 HTML 代码（从第一个 <p> 或 <h2> 开始），不要任何解释、不要 markdown 代码块标记。
+2. 不要输出 "<!DOCTYPE html>" 或 "<html>" "<head>" "<body>" 标签，只输出 body 内部的内容。
+3. 保持整体自然、协调，不要过度设计。
+4. 开头段落用几个笔刷样式引入，中间适度使用蓝色和棕色字体标注关键点。
+5. 确保有加粗和笔刷的节奏感。`;
+
+        async function loadLayoutSkill() {
+            if (layoutSkillPrompt) {
+                return layoutSkillPrompt;
+            }
+
+            try {
+                const response = await fetch('wechat-layout-skill.txt', { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`skill ${response.status}`);
+                }
+
+                const text = (await response.text()).trim();
+                if (text) {
+                    layoutSkillPrompt = text;
+                    return layoutSkillPrompt;
+                }
+            } catch (err) {
+                console.warn('Using embedded layout skill fallback:', err);
+            }
+
+            layoutSkillPrompt = FALLBACK_LAYOUT_SKILL;
+            return layoutSkillPrompt;
+        }
+
+        async function buildSystemPrompt() {
+            return loadLayoutSkill();
+        }
+
+        // ── Call API ──
+        async function generate() {
+            const text = inputText.value.trim();
+            if (!text) {
+                showToast('请先粘贴要排版的原文');
+                return;
+            }
+
+            const baseUrl = apiBaseUrl.value.trim() || DEFAULTS.baseUrl;
+            const token = apiToken.value.trim() || DEFAULTS.token;
+            const model = apiModel.value.trim() || DEFAULTS.model;
+            const maxTokens = parseInt(apiMaxTokens.value) || 8192;
+
+            if (!token) {
+                showToast('请填写 API Token');
+                return;
+            }
+
+            saveSettings();
+            setLoading(true);
+
+            try {
+                const systemPrompt = await buildSystemPrompt();
+
+                // Try Anthropic-compatible endpoint first
+                const endpoint = baseUrl.endsWith('/v1/messages')
+                    ? baseUrl
+                    : baseUrl.replace(/\/$/, '') + '/v1/messages';
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': token,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        max_tokens: maxTokens,
+                        temperature: 0.1,
+                        system: systemPrompt,
+                        messages: [
+                            { role: 'user', content: text }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errBody = await response.text().catch(() => '');
+                    // If 404/405, fall through to OpenAI format
+                    if (response.status === 404 || response.status === 405) {
+                        throw { type: 'FALLBACK', status: response.status, body: errBody };
+                    }
+                    throw new Error(`API 错误 ${response.status}: ${errBody.slice(0, 150)}`);
+                }
+
+                const data = await response.json();
+                let resultHtml = extractContent(data);
+                resultHtml = cleanResult(resultHtml);
+                setLoading(false);
+                renderResult(resultHtml);
+                return;
+
+            } catch (err) {
+                if (err && err.type === 'FALLBACK') {
+                    // Try OpenAI format silently
+                    try {
+                        await callOpenAI(text, token, model, maxTokens, baseUrl, await buildSystemPrompt());
+                        return;
+                    } catch (err2) {
+                        console.error('Both formats failed:', err2);
+                        showToast('生成失败: 两种 API 格式都失败了，请检查接口地址和 Token');
+                        setLoading(false);
+                        return;
+                    }
+                }
+                console.error('Generate error:', err);
+                showToast('生成失败: ' + (err.message || '未知错误'));
+                setLoading(false);
+            }
+        }
+
+        function extractContent(data) {
+            if (data.content && Array.isArray(data.content)) {
+                const textBlocks = data.content
+                    .filter((c) => c && ((c.type === 'text' && c.text) || (!c.type && c.text)))
+                    .map((c) => c.text || '')
+                    .join('');
+                if (textBlocks) return textBlocks;
+            }
+            if (data.choices && Array.isArray(data.choices)) {
+                const choiceContent = data.choices[0]?.message?.content;
+                if (Array.isArray(choiceContent)) {
+                    return choiceContent
+                        .filter((c) => c && ((c.type === 'text' && c.text) || (!c.type && c.text)))
+                        .map((c) => c.text || '')
+                        .join('');
+                }
+                return choiceContent || '';
+            }
+            if (typeof data === 'string') return data;
+            return '';
+        }
+
+        function cleanResult(html) {
+            html = html
+                .replace(/^```html?\s*\n?/i, '')
+                .replace(/\n?```\s*$/i, '')
+                .replace(/<!doctype[^>]*>/gi, '')
+                .replace(/<\/?html[^>]*>/gi, '')
+                .replace(/<head[\s\S]*?<\/head>/gi, '')
+                .replace(/<\/?body[^>]*>/gi, '')
+                .trim();
+            if (!html.trim()) throw new Error('API 返回了空内容');
+            return html;
+        }
+
+        async function callOpenAI(text, token, model, maxTokens, baseUrl, systemPrompt) {
+            const endpoint = baseUrl.replace(/\/anthropic\/?$/, '/v1').replace(/\/$/, '') + '/chat/completions';
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    model: model,
+                    max_tokens: maxTokens,
+                    temperature: 0.1,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: text }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const errBody = await response.text().catch(() => '');
+                throw new Error(`OpenAI 格式 ${response.status}: ${errBody.slice(0, 150)}`);
+            }
+
+            const data = await response.json();
+            let resultHtml = extractContent(data);
+            resultHtml = cleanResult(resultHtml);
+            setLoading(false);
+            renderResult(resultHtml);
+        }
+
+        function renderResult(html) {
+            latestResultHtml = html;
+            resultPreview.innerHTML = `<div class="article-preview">${html}</div>`;
+            copyHtmlBtn.disabled = false;
+        }
+
+        async function copyRichHtml(html, plainText) {
+            if (window.ClipboardItem && navigator.clipboard?.write) {
+                try {
+                    const item = new ClipboardItem({
+                        'text/html': new Blob([html], { type: 'text/html' }),
+                        'text/plain': new Blob([plainText], { type: 'text/plain' })
+                    });
+                    await navigator.clipboard.write([item]);
+                    return true;
+                } catch (err) {
+                    console.warn('Clipboard API unavailable, using fallback copy:', err);
+                }
+            }
+
+            const holder = document.createElement('div');
+            holder.setAttribute('contenteditable', 'true');
+            holder.style.position = 'fixed';
+            holder.style.left = '-9999px';
+            holder.style.top = '0';
+            holder.style.opacity = '0';
+            holder.innerHTML = html;
+            document.body.appendChild(holder);
+
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(holder);
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            const listener = (event) => {
+                event.preventDefault();
+                event.clipboardData.setData('text/html', html);
+                event.clipboardData.setData('text/plain', plainText);
+            };
+
+            document.addEventListener('copy', listener);
+
+            try {
+                return document.execCommand('copy');
+            } catch (err) {
+                console.warn('Fallback copy failed:', err);
+                return false;
+            } finally {
+                document.removeEventListener('copy', listener);
+                selection.removeAllRanges();
+                document.body.removeChild(holder);
+            }
+        }
+
+        async function copyPlainHtmlText(html) {
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(html);
+                    return true;
+                }
+            } catch (err) {
+                console.warn('Plain clipboard API unavailable, using textarea fallback:', err);
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = html;
+            textarea.setAttribute('readonly', 'readonly');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                return document.execCommand('copy');
+            } catch (err) {
+                console.warn('Plain fallback copy failed:', err);
+                return false;
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        async function copyHtml() {
+            if (!latestResultHtml) {
+                showToast('当前还没有可复制的结果');
+                return;
+            }
+
+            const article = resultPreview.querySelector('.article-preview');
+            const html = article ? article.innerHTML : latestResultHtml;
+            const plainText = article ? article.innerText : resultPreview.innerText;
+
+            const copiedRich = await copyRichHtml(html, plainText);
+            if (copiedRich) {
+                showToast('HTML 已复制');
+                return;
+            }
+
+            const copiedPlain = await copyPlainHtmlText(html);
+            showToast(copiedPlain ? 'HTML 文本已复制' : '复制失败，请手动选择结果复制');
+        }
+
+        // ── Event listeners ──
+        generateBtn.addEventListener('click', generate);
+
+        clearBtn.addEventListener('click', () => {
+            inputText.value = '';
+            inputText.focus();
+        });
+
+        copyHtmlBtn.addEventListener('click', copyHtml);
+
+        settingsToggle.addEventListener('click', () => {
+            settingsPanel.classList.toggle('is-open');
+            if (settingsPanel.classList.contains('is-open')) {
+                settingsToggle.style.color = 'var(--brand)';
+            } else {
+                settingsToggle.style.color = '';
+            }
+        });
+
+        // Keyboard shortcut: Ctrl+Enter to generate
+        inputText.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                generate();
+            }
+        });
+
+        // ── Init ──
+        loadSettings();
+        loadLayoutSkill();
+    })();
+    </script>
+</body>
+</html>
