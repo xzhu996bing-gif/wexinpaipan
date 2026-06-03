@@ -433,7 +433,7 @@
                     <h3>API 配置</h3>
                     <div class="form-group">
                         <label for="apiBaseUrl">API 地址</label>
-                        <input type="text" id="apiBaseUrl" placeholder="https://api.deepseek.com/v1 或 https://api.openai.com/v1/chat/completions">
+                        <input type="text" id="apiBaseUrl" placeholder="https://api.deepseek.com/anthropic">
                     </div>
                     <div class="form-group">
                         <label for="apiToken">API Key</label>
@@ -441,7 +441,7 @@
                     </div>
                     <div class="form-group">
                         <label for="apiModel">模型</label>
-                        <input type="text" id="apiModel" placeholder="deepseek-chat / gpt-4o-mini / mimo-v2.5">
+                        <input type="text" id="apiModel" placeholder="Deepseek-V4-Flash">
                     </div>
                     <div class="settings-actions">
                         <button class="btn btn--primary" id="saveSettingsBtn">保存配置</button>
@@ -513,9 +513,9 @@
 
         // ── Defaults ──
         const DEFAULTS = {
-            baseUrl: '',
+            baseUrl: 'https://api.deepseek.com/anthropic',
             token: '',
-            model: 'mimo-v2.5'
+            model: 'Deepseek-V4-Flash'
         };
         const ANTHROPIC_MAX_TOKENS = 16384;
 
@@ -523,7 +523,10 @@
         function loadSettings() {
             try {
                 const saved = JSON.parse(localStorage.getItem('wechat-editor-settings') || '{}');
-                apiBaseUrl.value = saved.baseUrl || DEFAULTS.baseUrl;
+                const savedBaseUrl = (saved.baseUrl || '').trim();
+                apiBaseUrl.value = /api\.deepseek\.com\/authropic/i.test(savedBaseUrl)
+                    ? DEFAULTS.baseUrl
+                    : (savedBaseUrl || DEFAULTS.baseUrl);
                 apiToken.value = saved.token || DEFAULTS.token;
                 apiModel.value = saved.model === 'mino-2.5' ? DEFAULTS.model : (saved.model || DEFAULTS.model);
             } catch (e) {
@@ -735,7 +738,7 @@
         }
 
         function buildOpenAIEndpoint(baseUrl) {
-            const clean = stripTrailingSlash(baseUrl).replace(/\/anthropic$/i, '');
+            const clean = stripTrailingSlash(baseUrl).replace(/\/(?:anthropic|authropic)$/i, '');
             if (/\/chat\/completions$/i.test(clean)) {
                 return clean;
             }
